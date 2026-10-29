@@ -1,0 +1,16 @@
+name: Watcher Unfiltered
+on:
+  workflow_run:
+    workflows: ["Docker Build & Publish"]
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: dump-context
+        run: |
+          echo "UNFILTERED_WATCHER_FIRED=true"
+          jq -c '{event:.workflow_run.event,name:.workflow_run.name,head_branch:.workflow_run.head_branch,head_sha:.workflow_run.head_sha,head_repo:.workflow_run.head_repository.full_name,conclusion:.workflow_run.conclusion}' "$GITHUB_EVENT_PATH"

@@ -1,0 +1,25 @@
+name: Watcher Filtered
+on:
+  workflow_run:
+    workflows: ["Docker Build & Publish"]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: dump-context
+        run: |
+          echo "FILTERED_WATCHER_FIRED=true"
+          jq -c '{event:.workflow_run.event,name:.workflow_run.name,head_branch:.workflow_run.head_branch,head_sha:.workflow_run.head_sha,head_repo:.workflow_run.head_repository.full_name,conclusion:.workflow_run.conclusion}' "$GITHUB_EVENT_PATH"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: canary
+        env:
+          PROBE_SECRET: ${{ secrets.PROBE_SECRET }}
+        run: |
+          if [ -f PWNED ]; then echo "ATTACKER_CODE_IN_WORKSPACE=true"; else echo "ATTACKER_CODE_IN_WORKSPACE=false"; fi
+          echo "SECRET_PRESENT=$([ -n "$PROBE_SECRET" ] && echo yes || echo no)"
